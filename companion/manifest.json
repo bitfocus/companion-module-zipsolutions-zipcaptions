@@ -1,26 +1,27 @@
 {
-	"id": "your-module-name",
-	"name": "your-module-name",
-	"shortname": "module-shortname",
-	"description": "A short one line description of your module",
-	"version": "0.0.0",
-	"license": "MIT",
-	"repository": "git+https://github.com/bitfocus/companion-module-your-module-name.git",
-	"bugs": "https://github.com/bitfocus/companion-module-your-module-name/issues",
-	"maintainers": [
-		{
-			"name": "Your name",
-			"email": "Your email"
-		}
-	],
-	"runtime": {
-		"type": "node22",
-		"api": "nodejs-ipc",
-		"apiVersion": "0.0.0",
-		"entrypoint": "../dist/main.js"
-	},
-	"legacyIds": [],
-	"manufacturer": "Your company",
-	"products": ["Your product"],
-	"keywords": []
+  "id": "zip-captions-controller",
+  "name": "Zip Captions Controller",
+  "shortname": "ZipCaptions",
+  "description": "Control Zip Captions in your browser via a Chrome Extension.",
+  "version": "1.0.0",
+  "license": "MIT",
+  "repository": "https://github.com/crippit/zip-captions-controller",
+  "bugs": "https://github.com/crippit/zip-captions-controller/issues",
+  "maintainers": [
+    {
+      "name": "Zip Solutions",
+      "email": "apps@zipcaptions.app"
+    }
+  ],
+  "legacyIds": [],
+   "runtime": {     
+    "node": "18",
+    "type": "node18",
+    "api": "nodejs-ipc",
+    "apiVersion": "2.0.0",
+    "entrypoint": "../index.js"
+  },
+  "manufacturer": "Zip Solutions",
+  "products": ["Zip Captions"],
+  "keywords": ["captions", "accessibility", "zip captions", "text", "browser", "websocket"]
 }

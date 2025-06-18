@@ -1,11 +1,6 @@
-# companion-module-[replace with module name]
+# The Zip Captions Bitfocus Companion Module
+---
 
-See [HELP.md](./companion/HELP.md) and [LICENSE](./LICENSE)
+In order to use this module, you must have the Zip Captions Companion Extension installed in Chrome, you can find it here: https://tinyurl.com/zipcompanion.
+Download this extension and then place it into your Companion installation folder, you can find information about how to setup developer mode in Companion and set your directory for the modules here: https://github.com/bitfocus/companion/wiki/How-to-use-a-module-that-is-not-included-in-Companion-build
 
-## Getting started
-
-Executing a `yarn` command should perform all necessary steps to develop the module, if it does not then follow the steps below.
-
-The module can be built once with `yarn build`. This should be enough to get the module to be loadable by companion.
-
-While developing the module, by using `yarn dev` the compiler will be run in watch mode to recompile the files on change.
