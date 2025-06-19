@@ -7,7 +7,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "companion-module-build",
-    "dev": "companion-module-build --watch"
+    "dev": "companion-module-build --watch",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
     "bufferutil": "^4.0.9",
@@ -16,6 +17,7 @@
   },
   "devDependencies": {
     "@companion-module/base": "^1.x.x",
-    "@companion-module/tools": "^1.x.x"
+    "@companion-module/tools": "^1.x.x",
+    "eslint": "^9.29.0"
   }
 }
