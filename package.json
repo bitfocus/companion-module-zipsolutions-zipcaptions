@@ -10,7 +10,6 @@
     "dev": "companion-module-build --watch"
   },
   "dependencies": {
-    "@companion-module/base": "^1.x",
     "bufferutil": "^4.0.9",
     "utf-8-validate": "^6.0.5",
     "ws": "^8.x"
