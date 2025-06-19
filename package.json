@@ -1,6 +1,7 @@
 {
   "name": "zip-captions-controller",
   "version": "1.0.0",
+  "packageManager": "yarn@4.9.2",
   "main": "index.js",
   "license": "MIT",
   "private": true,
