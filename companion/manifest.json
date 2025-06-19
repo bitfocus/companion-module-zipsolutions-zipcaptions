@@ -1,11 +1,11 @@
 {
-  "id": "zip-captions-controller",
-  "name": "Zip Captions Controller",
-  "shortname": "ZipCaptions",
+  "id": "zipsolutions-zipcaptions",
+  "name": "zipsolutions-zipcaptions",
+  "shortname": "Zip Captions",
   "description": "Control Zip Captions in your browser via a Chrome Extension.",
   "version": "1.0.0",
   "license": "MIT",
-  "repository": "https://github.com/bitfocus/companion-module-zipsolutions-zipcaptions/",
+  "repository": "https://github.com/bitfocus/companion-module-zipsolutions-zipcaptions",
   "bugs": "https://github.com/bitfocus/companion-module-zipsolutions-zipcaptions/issues",
   "maintainers": [
     {
