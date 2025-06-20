@@ -3,7 +3,7 @@ import {
   runEntrypoint,
   InstanceStatus,
 } from "@companion-module/base";
-import WebSocket from "ws";
+import WebSocket, { WebSocketServer } from "ws";
 
 class ZipCaptionsController extends InstanceBase {
   constructor(internal) {
@@ -79,7 +79,7 @@ class ZipCaptionsController extends InstanceBase {
 
   initWebSocketServer() {
     const port = this.config.port || 8080;
-    this.wsServer = new WebSocket.Server({ port: port });
+    this.wsServer = new WebSocketServer({ port: port });
 
     this.wsServer.on("connection", (ws) => {
       this.log("info", `WebSocket client connected on port ${port}`);
