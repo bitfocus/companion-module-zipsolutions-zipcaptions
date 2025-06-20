@@ -3,7 +3,7 @@ import {
   runEntrypoint,
   InstanceStatus,
 } from "@companion-module/base";
-import WebSocket, { WebSocketServer } from 'ws';
+import WebSocket, { WebSocketServer } from "ws";
 
 class ZipCaptionsController extends InstanceBase {
   constructor(internal) {
