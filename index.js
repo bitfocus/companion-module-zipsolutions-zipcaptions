@@ -26,7 +26,6 @@ class ZipCaptionsController extends InstanceBase {
 
     this.initWebSocketServer();
     this.initActions();
-    this.updateStatus(InstanceStatus.Ok);
   }
 
   async destroy() {
@@ -80,6 +79,17 @@ class ZipCaptionsController extends InstanceBase {
   initWebSocketServer() {
     const port = this.config.port || 8080;
     this.wsServer = new WebSocketServer({ port: port });
+
+    this.wsServer.on("listening", () => {
+      this.log(
+        "info",
+        `WebSocket server started and listening on port ${port}`,
+      );
+      this.updateStatus(
+        InstanceStatus.Ok,
+        `Listening on port ${port} (Waiting for Extension)`,
+      );
+    });
 
     this.wsServer.on("connection", (ws) => {
       this.log("info", `WebSocket client connected on port ${port}`);
@@ -179,4 +189,4 @@ class ZipCaptionsController extends InstanceBase {
   }
 }
 
-runEntrypoint(ZipCaptionsController);
+runEntrypoint(ZipCaptionsController, []);

@@ -13,6 +13,7 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
+    "@companion-module/base": "^1.x.x",
     "bufferutil": "^4.0.9",
     "utf-8-validate": "^6.0.5",
     "ws": "^8.x"
@@ -21,16 +22,11 @@
     "@companion-module/base": "^1.x.x",
     "@companion-module/tools": "^2.x.x",
     "@eslint/js": "^8.x.x",
-    "@typescript-eslint/eslint-plugin": "^7.x.x",
-    "@typescript-eslint/parser": "^7.x.x",
     "eslint": "^9.29.0",
     "eslint-plugin-n": "^17.x.x",
     "eslint-plugin-prettier": "^5.x.x",
     "globals": "^15.x.x",
     "prettier": "^3.x.x",
     "typescript": "^5.x.x"
-  },
-  "description": "---",
-  "keywords": [],
-  "author": ""
+  }
 }

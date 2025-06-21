@@ -1,52 +1,38 @@
-// @ts-check
+// @ts-check // You can optionally remove this line as it's for TypeScript type checking
 
-// Direct imports for ESLint flat config components
-import globals from "globals";
-import eslint from "@eslint/js";
-
-// Directly import the TypeScript ESLint parser and plugin
-import tsParser from "@typescript-eslint/parser";
-import tsPlugin from "@typescript-eslint/eslint-plugin";
-
-import pluginPrettierRecommended from "eslint-plugin-prettier/recommended";
-import pluginN from "eslint-plugin-n";
+// Import the necessary modules
+import globals from "globals"; // For Node.js globals
+import eslint from "@eslint/js"; // For ESLint's recommended rules
+import pluginPrettierRecommended from "eslint-plugin-prettier/recommended"; // For Prettier integration
+import pluginN from "eslint-plugin-n"; // For Node.js-specific rules
 
 export default [
-  // ESLint's recommended base rules
+  // ESLint's recommended base rules for general JavaScript
   eslint.configs.recommended,
 
   // Node.js specific rules from eslint-plugin-n
-  pluginN.configs["flat/recommended-script"], // Or 'flat/recommended' for ESM files
+  // Use 'flat/recommended-module' for ES Modules (which your index.js now is)
+  pluginN.configs["flat/recommended-module"],
 
-  // Configuration for TypeScript files
+  // Main configuration for all JavaScript files (.js, .mjs)
   {
-    // Register the TypeScript ESLint plugin
-    plugins: {
-      "@typescript-eslint": tsPlugin,
-    },
-    // Configure language options for TypeScript files
+    files: ["**/*.js", "**/*.mjs"], // Target all standard JS and ES Module files
     languageOptions: {
       globals: {
-        ...globals.node,
+        ...globals.node, // Exposes Node.js global variables (like `process`, `module`, etc.)
       },
-      // Use the TypeScript parser
-      parser: tsParser,
+      // No specific parser needed for plain JavaScript; ESLint's default parser works
       parserOptions: {
-        // This tells the parser to use your tsconfig.json for type-checking
-        project: true,
-        // If your tsconfig.json is not in the root, specify the path:
-        // project: './path/to/your/tsconfig.json',
-        ecmaVersion: 2022, // Or your target ES version
-        sourceType: "module",
+        ecmaVersion: 2022, // Allows modern JavaScript syntax (e.g., async/await, optional chaining)
+        sourceType: "module", // Crucial: Tells ESLint to parse these files as ES Modules (using `import`/`export`)
       },
     },
-    // Apply recommended TypeScript ESLint rules (type-aware)
-    // Use tsPlugin.configs directly as they are now imported
+    // Rules that apply to all your JavaScript files
     rules: {
-      ...tsPlugin.configs.recommended.rules,
-      ...tsPlugin.configs["recommended-type-checked"].rules,
+      // Prettier formatting rule (ensure your code matches Prettier's style)
+      "prettier/prettier": "error",
 
-      // Your custom rules and overrides
+      // Basic ESLint rules
       "no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_(.+)" },
@@ -57,59 +43,26 @@ export default [
         "error",
         { terms: ["nocommit", "@nocommit", "@no-commit"] },
       ],
+
+      // Node.js-specific rules from eslint-plugin-n
       "n/no-unsupported-features/es-syntax": [
         "error",
         { ignores: ["modules"] },
       ],
+      // If you had `require()` calls and want to allow them despite `sourceType: 'module'`,
+      // you would need to disable specific rules, but typically you'd convert to `import`.
+      // e.g., 'n/no-unpublished-require': 'off'
+    },
+  },
 
-      // TypeScript-ESLint overrides or custom rules
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/interface-name-prefix": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          argsIgnorePattern: "^_",
-          caughtErrorsIgnorePattern: "^_",
-          varsIgnorePattern: "^_(.+)",
-        },
-      ],
-      "@typescript-eslint/no-floating-promises": "error",
-      "@typescript-eslint/explicit-module-boundary-types": ["error"],
-      "@typescript-eslint/promise-function-async": "error",
-      "@typescript-eslint/require-await": "off",
-      "@typescript-eslint/no-unsafe-assignment": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
-      "@typescript-eslint/no-unsafe-argument": "off",
-      "@typescript-eslint/no-unsafe-return": "off",
-      "@typescript-eslint/no-unsafe-call": "off",
-      "@typescript-eslint/restrict-template-expressions": "off",
-      "@typescript-eslint/restrict-plus-operands": "off",
-      "@typescript-eslint/no-redundant-type-constituents": "off",
-    },
-  },
-  // Rules specific to JS files, disabling TypeScript-aware rules
-  {
-    files: ["**/*.js", "**/*.cjs", "**/*.mjs"],
-    // Disable specific type-checked rules for JS files that might be inherited
-    ...tsPlugin.configs.disableTypeChecked,
-    languageOptions: {
-      parserOptions: {
-        project: undefined, // No 'project' for pure JS files
-      },
-      sourceType: "module",
-    },
-    rules: {
-      // You might need to explicitly turn off some @typescript-eslint rules for JS files here
-      // e.g., '@typescript-eslint/explicit-module-boundary-types': 'off',
-    },
-  },
-  // Prettier integration (must be last to ensure formatting rules override)
+  // Prettier integration (must be last to ensure formatting rules override other ESLint rules)
   pluginPrettierRecommended,
-  // Ignored files (often from .gitignore)
+
+  // Ignored files (often matches your .gitignore)
   {
     ignores: ["**/dist/*", "/dist", "**/pkg/*", "**/docs/*", "**/generated/*"],
   },
-  // Specific rule for ESLint config files themselves
+  // Specific rule for ESLint config files themselves (as they often import devDependencies)
   {
     files: ["eslint.config.*"],
     rules: {
