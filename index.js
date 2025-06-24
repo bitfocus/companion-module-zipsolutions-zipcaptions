@@ -4,7 +4,6 @@ import {
   InstanceStatus,
   combineRgb,
 } from "@companion-module/base";
-// CORRECTED: Import WebSocket as the default to access its static properties like .OPEN
 import WebSocket, { WebSocketServer } from "ws";
 
 class ZipCaptionsController extends InstanceBase {
@@ -15,6 +14,7 @@ class ZipCaptionsController extends InstanceBase {
     this.clients = new Set();
     this.pingInterval = null;
     this.captionState = "unknown";
+    this.lastWord = "";
 
     this.CHOICES_COMMANDS = [
       { id: "TOGGLE_LISTEN", label: "Toggle Listen (Start/Stop)" },
@@ -34,7 +34,7 @@ class ZipCaptionsController extends InstanceBase {
   }
 
   async destroy() {
-    this.log("debug", "Destroying Zip Captions Controller module...");
+    this.log("debug", "Destroying module...");
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
       this.pingInterval = null;
@@ -64,7 +64,7 @@ class ZipCaptionsController extends InstanceBase {
         max: 65535,
         default: 8082,
         tooltip:
-          "This port must match the port configured in your Chrome Extension's background.js file.",
+          "This port must match the port configured in the Chrome Extension.",
       },
     ];
   }
@@ -106,7 +106,6 @@ class ZipCaptionsController extends InstanceBase {
 
       this.pingInterval = setInterval(() => {
         this.clients.forEach((client) => {
-          // CORRECTED: Check readyState against the imported WebSocket object's OPEN property.
           if (client.readyState === WebSocket.OPEN) {
             client.send("PING");
             this.log("debug", "Sent PING to extension.");
@@ -115,18 +114,36 @@ class ZipCaptionsController extends InstanceBase {
       }, 20000);
 
       ws.on("message", (message) => {
+        // --- THIS ENTIRE BLOCK IS THE FINAL FIX ---
+        const messageString = message.toString();
+
+        if (messageString === "PONG") {
+          this.log("debug", "Received PONG from client.");
+          return;
+        }
+
         try {
-          const data = JSON.parse(message);
+          const data = JSON.parse(messageString);
+          const variablesToUpdate = {};
+
           if (data.status) {
-            this.log("debug", `Received status update: ${data.status}`);
             this.captionState = data.status;
+            variablesToUpdate.caption_state = this.captionState;
             this.checkFeedbacks("caption_state");
-            this.setVariableValues({ caption_state: this.captionState });
+          }
+          if (data.lastWord) {
+            this.lastWord = data.lastWord;
+            variablesToUpdate.last_word = this.lastWord;
+          }
+
+          // Call setVariableValues ONCE with all changes.
+          if (Object.keys(variablesToUpdate).length > 0) {
+            this.setVariableValues(variablesToUpdate);
           }
         } catch (e) {
           this.log(
             "warn",
-            `Received invalid message from client. Error: ${e.message}`,
+            `Received invalid JSON message from client. Error: ${e.message}`,
           );
         }
       });
@@ -186,7 +203,6 @@ class ZipCaptionsController extends InstanceBase {
           if (this.clients.size > 0) {
             this.log("debug", `Sending command: "${commandToSend}"`);
             this.clients.forEach((client) => {
-              // CORRECTED: Check readyState against the imported WebSocket object's OPEN property.
               if (client.readyState === WebSocket.OPEN) {
                 client.send(commandToSend);
               }
@@ -241,8 +257,15 @@ class ZipCaptionsController extends InstanceBase {
         name: "Captioning Status",
         variableId: "caption_state",
       },
+      {
+        name: "Last Captioned Word",
+        variableId: "last_word",
+      },
     ]);
-    this.setVariableValues({ caption_state: this.captionState });
+    this.setVariableValues({
+      caption_state: this.captionState,
+      last_word: this.lastWord,
+    });
   }
 }
 
