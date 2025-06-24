@@ -67,6 +67,12 @@ export default [
     files: ["eslint.config.*"],
     rules: {
       "n/no-unpublished-import": "off",
+      "n/no-unsupported-features/node-builtins": [
+        "error",
+        {
+          ignores: ["WebSocket"],
+        },
+      ],
     },
   },
 ];

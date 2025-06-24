@@ -2,5 +2,19 @@
 ---
 
 In order to use this module, you must have the Zip Captions Companion Extension installed in Chrome, you can find it here: https://tinyurl.com/zipcompanion.
-Download this extension and then place it into your Companion installation folder, you can find information about how to setup developer mode in Companion and set your directory for the modules here: https://github.com/bitfocus/companion/wiki/How-to-use-a-module-that-is-not-included-in-Companion-build
 
+This module will only control Zip Captions on the device which Companion is running. 
+
+The following can be controlled:
+
+- Play/Pause
+- Start/Stop
+
+The following can be shown in Companion:
+
+- Captions Running
+- Captions Stopped
+
+FUTURE Development:
+
+In the future we hope to show you the last word that was captioned on your device.
