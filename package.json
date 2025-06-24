@@ -1,32 +1,28 @@
 {
   "name": "zip-captions-controller",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "packageManager": "yarn@4.9.2",
   "main": "index.js",
   "license": "MIT",
-  "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "companion-module-build",
     "dev": "companion-module-build --watch",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@companion-module/base": "^1.x.x",
-    "bufferutil": "^4.0.9",
-    "utf-8-validate": "^6.0.5",
     "ws": "^8.x"
   },
   "devDependencies": {
-    "@companion-module/base": "^1.x.x",
     "@companion-module/tools": "^2.x.x",
     "@eslint/js": "^8.x.x",
     "eslint": "^9.29.0",
     "eslint-plugin-n": "^17.x.x",
     "eslint-plugin-prettier": "^5.x.x",
     "globals": "^15.x.x",
-    "prettier": "^3.x.x",
-    "typescript": "^5.x.x"
+    "prettier": "^3.x.x"
   }
 }

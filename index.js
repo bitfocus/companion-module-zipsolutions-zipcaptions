@@ -2,45 +2,46 @@ import {
   InstanceBase,
   runEntrypoint,
   InstanceStatus,
+  combineRgb,
 } from "@companion-module/base";
+// CORRECTED: Import WebSocket as the default to access its static properties like .OPEN
 import WebSocket, { WebSocketServer } from "ws";
 
 class ZipCaptionsController extends InstanceBase {
   constructor(internal) {
     super(internal);
-    this.wsServer = null; // Our WebSocket server instance
-    this.wsClient = null; // The connected client (your Chrome extension)
+
+    this.wsServer = null;
+    this.clients = new Set();
     this.pingInterval = null;
+    this.captionState = "unknown";
 
     this.CHOICES_COMMANDS = [
-      { id: "PLAY_PAUSE", label: "Play/Pause" },
-      { id: "TOGGLE_LISTEN", label: "Start/Stop" },
+      { id: "TOGGLE_LISTEN", label: "Toggle Listen (Start/Stop)" },
+      { id: "PLAY_PAUSE", label: "Toggle Play/Pause" },
     ];
   }
 
   async init(config) {
     this.config = config;
     this.updateStatus(InstanceStatus.Connecting);
-
     this.log("debug", "Initializing Zip Captions Controller module...");
 
     this.initWebSocketServer();
     this.initActions();
+    this.init_feedbacks();
+    this.init_variables();
   }
 
   async destroy() {
     this.log("debug", "Destroying Zip Captions Controller module...");
-    if (this.wsClient) {
-      this.wsClient.close();
-      this.wsClient = null;
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
     }
     if (this.wsServer) {
       this.wsServer.close();
       this.wsServer = null;
-    }
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
-      this.pingInterval = null;
     }
   }
 
@@ -61,7 +62,7 @@ class ZipCaptionsController extends InstanceBase {
         width: 4,
         min: 1024,
         max: 65535,
-        default: 8082, // Default port, MUST match Chrome Extension
+        default: 8082,
         tooltip:
           "This port must match the port configured in your Chrome Extension's background.js file.",
       },
@@ -71,13 +72,19 @@ class ZipCaptionsController extends InstanceBase {
   async configUpdated(config) {
     this.config = config;
     this.log("debug", "Configuration updated. Restarting WebSocket server...");
-    if (this.wsClient) this.wsClient.close();
-    if (this.wsServer) this.wsServer.close();
+    if (this.wsServer) {
+      this.wsServer.close();
+    }
     this.initWebSocketServer();
   }
 
   initWebSocketServer() {
-    const port = this.config.port || 8080;
+    const port = this.config.port;
+    if (!port) {
+      this.updateStatus(InstanceStatus.BadConfig, "Port is not configured!");
+      return;
+    }
+
     this.wsServer = new WebSocketServer({ port: port });
 
     this.wsServer.on("listening", () => {
@@ -85,51 +92,62 @@ class ZipCaptionsController extends InstanceBase {
         "info",
         `WebSocket server started and listening on port ${port}`,
       );
-      this.updateStatus(
-        InstanceStatus.Ok,
-        `Listening on port ${port} (Waiting for Extension)`,
-      );
+      this.updateStatus(InstanceStatus.Ok, `Listening (Waiting for Extension)`);
     });
 
     this.wsServer.on("connection", (ws) => {
-      this.log("info", `WebSocket client connected on port ${port}`);
-      this.wsClient = ws;
+      this.log("info", `Chrome Extension connected.`);
+      this.clients.add(ws);
       this.updateStatus(InstanceStatus.Ok, "Connected to Extension");
 
       if (this.pingInterval) {
         clearInterval(this.pingInterval);
       }
 
-      // Start sending ping messages to keep the service worker alive
       this.pingInterval = setInterval(() => {
-        if (this.wsClient && this.wsClient.readyState === WebSocket.OPEN) {
-          this.wsClient.send("PING"); // Send a simple PING command
-          this.log("debug", "Sent PING to extension.");
-        }
-      }, 10000); // Send PING every 30 seconds
+        this.clients.forEach((client) => {
+          // CORRECTED: Check readyState against the imported WebSocket object's OPEN property.
+          if (client.readyState === WebSocket.OPEN) {
+            client.send("PING");
+            this.log("debug", "Sent PING to extension.");
+          }
+        });
+      }, 20000);
 
-      ws.on("close", (code, reason) => {
-        this.log(
-          "info",
-          `WebSocket client disconnected. Code: ${code}, Reason: ${reason}`,
-        );
-        this.wsClient = null;
-        this.updateStatus(
-          InstanceStatus.Warning,
-          "Disconnected from Extension",
-        );
-        if (this.pingInterval) {
-          clearInterval(this.pingInterval);
-          this.pingInterval = null;
+      ws.on("message", (message) => {
+        try {
+          const data = JSON.parse(message);
+          if (data.status) {
+            this.log("debug", `Received status update: ${data.status}`);
+            this.captionState = data.status;
+            this.checkFeedbacks("caption_state");
+            this.setVariableValues({ caption_state: this.captionState });
+          }
+        } catch (e) {
+          this.log(
+            "warn",
+            `Received invalid message from client. Error: ${e.message}`,
+          );
+        }
+      });
+
+      ws.on("close", () => {
+        this.log("info", `Chrome Extension disconnected.`);
+        this.clients.delete(ws);
+        if (this.clients.size === 0) {
+          this.updateStatus(
+            InstanceStatus.Warning,
+            "Disconnected from Extension",
+          );
+          if (this.pingInterval) {
+            clearInterval(this.pingInterval);
+            this.pingInterval = null;
+          }
         }
       });
 
       ws.on("error", (error) => {
         this.log("error", `WebSocket client error: ${error.message}`);
-        this.updateStatus(
-          InstanceStatus.ConnectionFailure,
-          `Extension Error: ${error.message}`,
-        );
       });
     });
 
@@ -146,14 +164,11 @@ class ZipCaptionsController extends InstanceBase {
           `Server Error: ${error.message}`,
         );
       }
-      this.wsServer = null;
     });
-
-    this.log("info", `WebSocket server listening on port ${port}`);
   }
 
   initActions() {
-    const actions = {
+    this.setActionDefinitions({
       send_command: {
         name: "Send Command to Zip Captions",
         options: [
@@ -161,21 +176,25 @@ class ZipCaptionsController extends InstanceBase {
             type: "dropdown",
             id: "command",
             label: "Command",
-            default: "PLAY_PAUSE",
+            default: "TOGGLE_LISTEN",
             choices: this.CHOICES_COMMANDS,
             tooltip: "Select the action to perform in Zip Captions.",
           },
         ],
         callback: async (event) => {
           const commandToSend = event.options.command;
-          this.log("debug", `Sending command: ${commandToSend}`);
-          if (this.wsClient && this.wsClient.readyState === WebSocket.OPEN) {
-            this.wsClient.send(commandToSend);
-            this.log("info", `Command "${commandToSend}" sent.`);
+          if (this.clients.size > 0) {
+            this.log("debug", `Sending command: "${commandToSend}"`);
+            this.clients.forEach((client) => {
+              // CORRECTED: Check readyState against the imported WebSocket object's OPEN property.
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(commandToSend);
+              }
+            });
           } else {
             this.log(
               "warn",
-              `No WebSocket client connected or client not ready. Command "${commandToSend}" not sent.`,
+              `Command not sent: No Chrome extension connected.`,
             );
             this.updateStatus(
               InstanceStatus.Warning,
@@ -184,8 +203,46 @@ class ZipCaptionsController extends InstanceBase {
           }
         },
       },
-    };
-    this.setActionDefinitions(actions);
+    });
+  }
+
+  init_feedbacks() {
+    this.setFeedbackDefinitions({
+      caption_state: {
+        type: "boolean",
+        name: "Captioning State",
+        description: "Change button style if captioning is running or stopped",
+        defaultStyle: {
+          bgcolor: combineRgb(0, 255, 0),
+          color: combineRgb(0, 0, 0),
+        },
+        options: [
+          {
+            type: "dropdown",
+            label: "State",
+            id: "state",
+            default: "running",
+            choices: [
+              { id: "running", label: "Running" },
+              { id: "stopped", label: "Stopped" },
+            ],
+          },
+        ],
+        callback: (feedback) => {
+          return this.captionState === feedback.options.state;
+        },
+      },
+    });
+  }
+
+  init_variables() {
+    this.setVariableDefinitions([
+      {
+        name: "Captioning Status",
+        variableId: "caption_state",
+      },
+    ]);
+    this.setVariableValues({ caption_state: this.captionState });
   }
 }
 
