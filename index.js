@@ -25,8 +25,6 @@ class ZipCaptionsController extends InstanceBase {
   async init(config) {
     this.config = config;
     this.updateStatus(InstanceStatus.Connecting);
-    this.log("debug", "Initializing Zip Captions Controller module...");
-
     this.initWebSocketServer();
     this.initActions();
     this.init_feedbacks();
@@ -41,7 +39,6 @@ class ZipCaptionsController extends InstanceBase {
     }
     if (this.wsServer) {
       this.wsServer.close();
-      this.wsServer = null;
     }
   }
 
@@ -53,7 +50,7 @@ class ZipCaptionsController extends InstanceBase {
         width: 12,
         label: "Information",
         value:
-          "This module controls Zip Captions via a Chrome Extension. Ensure the Chrome Extension is installed and running, and the port matches.",
+          "This module controls Zip Captions via a Chrome Extension. Ensure the Chrome Extension is installed and the port matches.",
       },
       {
         type: "number",
@@ -63,15 +60,12 @@ class ZipCaptionsController extends InstanceBase {
         min: 1024,
         max: 65535,
         default: 8082,
-        tooltip:
-          "This port must match the port configured in the Chrome Extension.",
       },
     ];
   }
 
   async configUpdated(config) {
     this.config = config;
-    this.log("debug", "Configuration updated. Restarting WebSocket server...");
     if (this.wsServer) {
       this.wsServer.close();
     }
@@ -88,10 +82,7 @@ class ZipCaptionsController extends InstanceBase {
     this.wsServer = new WebSocketServer({ port: port });
 
     this.wsServer.on("listening", () => {
-      this.log(
-        "info",
-        `WebSocket server started and listening on port ${port}`,
-      );
+      this.log("info", `WebSocket server listening on port ${port}`);
       this.updateStatus(InstanceStatus.Ok, `Listening (Waiting for Extension)`);
     });
 
@@ -100,21 +91,16 @@ class ZipCaptionsController extends InstanceBase {
       this.clients.add(ws);
       this.updateStatus(InstanceStatus.Ok, "Connected to Extension");
 
-      if (this.pingInterval) {
-        clearInterval(this.pingInterval);
-      }
-
+      if (this.pingInterval) clearInterval(this.pingInterval);
       this.pingInterval = setInterval(() => {
         this.clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
             client.send("PING");
-            this.log("debug", "Sent PING to extension.");
           }
         });
-      }, 20000);
+      }, 10000);
 
       ws.on("message", (message) => {
-        // --- THIS ENTIRE BLOCK IS THE FINAL FIX ---
         const messageString = message.toString();
 
         if (messageString === "PONG") {
@@ -125,7 +111,6 @@ class ZipCaptionsController extends InstanceBase {
         try {
           const data = JSON.parse(messageString);
           const variablesToUpdate = {};
-
           if (data.status) {
             this.captionState = data.status;
             variablesToUpdate.caption_state = this.captionState;
@@ -135,15 +120,13 @@ class ZipCaptionsController extends InstanceBase {
             this.lastWord = data.lastWord;
             variablesToUpdate.last_word = this.lastWord;
           }
-
-          // Call setVariableValues ONCE with all changes.
           if (Object.keys(variablesToUpdate).length > 0) {
             this.setVariableValues(variablesToUpdate);
           }
         } catch (e) {
           this.log(
             "warn",
-            `Received invalid JSON message from client. Error: ${e.message}`,
+            `Received invalid JSON message. Error: ${e.message}`,
           );
         }
       });
@@ -152,34 +135,24 @@ class ZipCaptionsController extends InstanceBase {
         this.log("info", `Chrome Extension disconnected.`);
         this.clients.delete(ws);
         if (this.clients.size === 0) {
-          this.updateStatus(
-            InstanceStatus.Warning,
-            "Disconnected from Extension",
-          );
-          if (this.pingInterval) {
-            clearInterval(this.pingInterval);
-            this.pingInterval = null;
-          }
+          this.updateStatus(InstanceStatus.Ok, "Listening");
+          if (this.pingInterval) clearInterval(this.pingInterval);
         }
       });
 
-      ws.on("error", (error) => {
-        this.log("error", `WebSocket client error: ${error.message}`);
-      });
+      ws.on("error", (error) =>
+        this.log("error", `WebSocket client error: ${error.message}`),
+      );
     });
 
     this.wsServer.on("error", (error) => {
-      this.log("error", `WebSocket server setup error: ${error.message}`);
       if (error.code === "EADDRINUSE") {
         this.updateStatus(
           InstanceStatus.ConnectionFailure,
           `Port ${port} is already in use!`,
         );
       } else {
-        this.updateStatus(
-          InstanceStatus.ConnectionFailure,
-          `Server Error: ${error.message}`,
-        );
+        this.updateStatus(InstanceStatus.Error, `Server Error: ${error.code}`);
       }
     });
   }
@@ -195,7 +168,6 @@ class ZipCaptionsController extends InstanceBase {
             label: "Command",
             default: "TOGGLE_LISTEN",
             choices: this.CHOICES_COMMANDS,
-            tooltip: "Select the action to perform in Zip Captions.",
           },
         ],
         callback: async (event) => {
@@ -208,14 +180,7 @@ class ZipCaptionsController extends InstanceBase {
               }
             });
           } else {
-            this.log(
-              "warn",
-              `Command not sent: No Chrome extension connected.`,
-            );
-            this.updateStatus(
-              InstanceStatus.Warning,
-              "Extension Not Connected",
-            );
+            this.log("warn", "Command not sent: No extension connected.");
           }
         },
       },
@@ -253,14 +218,8 @@ class ZipCaptionsController extends InstanceBase {
 
   init_variables() {
     this.setVariableDefinitions([
-      {
-        name: "Captioning Status",
-        variableId: "caption_state",
-      },
-      {
-        name: "Last Captioned Word",
-        variableId: "last_word",
-      },
+      { name: "Captioning Status", variableId: "caption_state" },
+      { name: "Last Captioned Word", variableId: "last_word" },
     ]);
     this.setVariableValues({
       caption_state: this.captionState,
