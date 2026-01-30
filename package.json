@@ -17,7 +17,7 @@
     "ws": "^8.x"
   },
   "devDependencies": {
-    "@companion-module/tools": "^2.x.x",
+    "@companion-module/tools": "^2.6.1",
     "@eslint/js": "^8.x.x",
     "eslint": "^9.29.0",
     "eslint-plugin-n": "^17.x.x",
