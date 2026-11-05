@@ -13,11 +13,11 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@companion-module/base": "^1.x.x",
+    "@companion-module/base": "^1.15.1",
     "ws": "^8.x"
   },
   "devDependencies": {
-    "@companion-module/tools": "^2.8.0",
+    "@companion-module/tools": "^2.9.1",
     "@eslint/js": "^8.x.x",
     "eslint": "^9.29.0",
     "eslint-plugin-n": "^17.x.x",
