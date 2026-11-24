@@ -1,6 +1,6 @@
 {
   "name": "zip-captions-controller",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "packageManager": "yarn@4.13.0",
   "main": "index.js",
